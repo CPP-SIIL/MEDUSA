@@ -1,0 +1,14 @@
+# Web server requirements for STL Classification Demo
+flask==2.3.3
+flask-cors==4.0.0
+werkzeug==2.3.7
+
+# For thumbnail generation (optional)
+pillow==10.0.1
+matplotlib==3.7.2
+
+# Already included in main requirements but listed for completeness
+# torch
+# torch-geometric  
+# numpy
+# trimesh
