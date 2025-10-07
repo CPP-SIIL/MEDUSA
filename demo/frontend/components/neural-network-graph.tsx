@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card"
 
 type NeuralNetworkGraphProps = {
   isProcessing: boolean
-  weightsUrl?: string | null
 }
 
 type Node = {
@@ -22,9 +21,9 @@ type Edge = {
   weight: number
 }
 
-export function NeuralNetworkGraph({ isProcessing, weightsUrl }: NeuralNetworkGraphProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const animationRef = useRef<number | null>(null)
+export function NeuralNetworkGraph({ isProcessing }: NeuralNetworkGraphProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const animationRef = useRef<number>(null)
   const nodesRef = useRef<Node[]>([])
   const edgesRef = useRef<Edge[]>([])
   const timeRef = useRef(0)
@@ -46,7 +45,7 @@ export function NeuralNetworkGraph({ isProcessing, weightsUrl }: NeuralNetworkGr
     updateSize()
     window.addEventListener("resize", updateSize)
 
-  // Initialize network structure
+    // Initialize network structure
     const initNetwork = () => {
       const layers = [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 2, 2] // Network architecture
       const nodes: Node[] = []
@@ -93,29 +92,8 @@ export function NeuralNetworkGraph({ isProcessing, weightsUrl }: NeuralNetworkGr
       nodesRef.current = nodes
       edgesRef.current = edges
     }
-    // If weightsUrl is provided, try to fetch weight values and map them to edges
-    const loadWeights = async () => {
-      if (!weightsUrl) return
-      try {
-        const resp = await fetch(weightsUrl)
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-        const payload = await resp.json()
-
-        // Expect payload to contain an array of edge weights or a structure we can traverse
-        const flatWeights: number[] = Array.isArray(payload) ? payload : payload.weights || []
-
-        // Map weights into edgesRef (clamp to [0,1])
-        for (let i = 0; i < edgesRef.current.length && i < flatWeights.length; i++) {
-          const w = Number(flatWeights[i])
-          edgesRef.current[i].weight = Number.isFinite(w) ? Math.min(1, Math.max(0, Math.abs(w))) : edgesRef.current[i].weight
-        }
-      } catch (e) {
-        console.warn("Failed to load weights:", e)
-      }
-    }
 
     initNetwork()
-    loadWeights()
 
     // Animation loop
     const animate = () => {
@@ -140,10 +118,7 @@ export function NeuralNetworkGraph({ isProcessing, weightsUrl }: NeuralNetworkGr
 
       // Draw edges
       edgesRef.current.forEach((edge) => {
-        // Use edge.weight to modulate alpha; combine with activation during processing
-        const baseAlpha = edge.weight ?? 0.2
-        const activationAlpha = isProcessing ? edge.from.activation * 0.6 : 0.08
-        const opacity = Math.min(1, baseAlpha * (isProcessing ? 1 + activationAlpha : 1))
+        const opacity = isProcessing ? edge.from.activation * 0.4 : 0.1
         ctx.beginPath()
         ctx.moveTo(edge.from.x, edge.from.y)
         ctx.lineTo(edge.to.x, edge.to.y)
@@ -176,8 +151,7 @@ export function NeuralNetworkGraph({ isProcessing, weightsUrl }: NeuralNetworkGr
         ctx.stroke()
       })
 
-  const id = requestAnimationFrame(animate)
-  animationRef.current = id
+      animationRef.current = requestAnimationFrame(animate)
     }
 
     animate()
