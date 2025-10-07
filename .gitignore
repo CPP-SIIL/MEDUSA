@@ -16,3 +16,4 @@ demo/frontend/public
 
 demo/frontend/.next/*
 demo/frontend/node_modules/*
+demo/exampleServerOutput.json

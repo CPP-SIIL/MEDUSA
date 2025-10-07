@@ -23,9 +23,9 @@ export function ModelSelectionPanel({ type, models, selectedModel, onSelect }: M
           <p className="text-sm text-slate-400">{subtitle}</p>
         </div>
 
-        {/* Horizontal scroller */}
+        {/* Horizontal scroller (no vertical scrollbar) */}
         <div className="w-full">
-          <div className="flex gap-4 overflow-x-auto py-2 px-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
+          <div className="flex gap-4 overflow-x-auto overflow-y-hidden py-2 px-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900 scrollbar-thumb-rounded">
             {models.map((model) => (
               <div key={model.id} className="min-w-[180px] flex-shrink-0">
                 <ModelCard

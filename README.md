@@ -1,4 +1,5 @@
-# STL 3D Model Classification with Graph Neural Networks
+# MEDUSA
+### Machine-learning Engine for Detecting Unlawful Shapes Automatically
 
 This project implements a Graph Neural Network (GNN) for classifying STL 3D models into two categories: gun parts or non-gun parts.
 

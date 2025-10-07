@@ -12,6 +12,8 @@ export type Model = {
   // URLs served by the backend (http://localhost:5000)
   thumbnailUrl?: string
   weightsUrl?: string
+  // server-side model path (e.g. /models/positive/xxx.stl) used for inference
+  url?: string
 }
 
 export type PredictionResult = {
@@ -55,6 +57,9 @@ export default function STLClassificationDemo() {
             confidence: m.confidence,
             thumbnailUrl: m.thumbnail ? `http://127.0.0.1:5000${m.thumbnail}` : undefined,
             weightsUrl: m.weights ? `http://127.0.0.1:5000${m.weights}` : undefined,
+            // backend returns a url field pointing to the model/file served by the server
+            // keep the raw server-side path (e.g. "/models/positive/xxx.stl") so the server can match it
+            url: m.url ? m.url : undefined,
           }
           if (m.type === 'positive') positives.push(model)
           else negatives.push(model)
@@ -71,24 +76,92 @@ export default function STLClassificationDemo() {
     loadModels()
   }, [])
 
-  const handleModelSelect = (model: Model) => {
+  const handleModelSelect = async (model: Model) => {
     setSelectedModel(model)
     setIsProcessing(true)
     setPredictionResult(null)
 
-    // Simulate prediction process
-    setTimeout(() => {
-      const result: PredictionResult = {
-        class: model.type,
-        confidence: model.confidence || 0.85,
+    // If backend model URL not provided, fall back to simulated result
+    if (!model.url) {
+      console.warn('No model.url available from backend; falling back to simulated result.')
+      setTimeout(() => {
+        const result: PredictionResult = {
+          class: model.type,
+          confidence: model.confidence || 0.85,
+          probabilities: {
+            positive: model.type === "positive" ? model.confidence || 0.85 : 1 - (model.confidence || 0.85),
+            negative: model.type === "negative" ? model.confidence || 0.85 : 1 - (model.confidence || 0.85),
+          },
+        }
+        setPredictionResult(result)
+        setIsProcessing(false)
+      }, 1000)
+      return
+    }
+
+    try {
+      const resp = await fetch('http://127.0.0.1:5000/api/doInference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // server expects the server-side path (e.g. "/models/positive/xxx.stl")
+        body: JSON.stringify({ modelUrl: model.url })
+      })
+
+      if (!resp.ok) {
+        const txt = await resp.text()
+        throw new Error(`HTTP ${resp.status}: ${txt}`)
+      }
+
+      const payload = await resp.json()
+
+      // Expected payload shape (demo server/test_api): { success: true, result: { class, confidence, probabilities } }
+      if (!payload || !payload.success || !payload.result) {
+        throw new Error(payload?.error || 'Invalid response from inference API')
+      }
+
+      const serverResult = payload.result
+
+      // Map server probabilities into { positive, negative }
+      let positiveProb = 0
+      let negativeProb = 0
+
+      const probs = serverResult.probabilities
+      if (Array.isArray(probs)) {
+        // server might return [neg, pos]
+        negativeProb = Number(probs[0] ?? 0)
+        positiveProb = Number(probs[1] ?? 0)
+      } else if (probs && typeof probs === 'object') {
+        positiveProb = Number(probs.positive ?? probs[1] ?? 0)
+        negativeProb = Number(probs.negative ?? probs[0] ?? 0)
+      } else {
+        // fallback: use confidence and class
+        const conf = Number(serverResult.confidence ?? 0)
+        const cls = serverResult.class
+        if (cls === 'positive' || cls === 1) {
+          positiveProb = conf
+          negativeProb = 1 - conf
+        } else {
+          negativeProb = conf
+          positiveProb = 1 - conf
+        }
+      }
+
+      const mapped: PredictionResult = {
+        class: serverResult.class === 'positive' || serverResult.class === 1 ? 'positive' : 'negative',
+        confidence: Number(serverResult.confidence ?? Math.max(positiveProb, negativeProb)),
         probabilities: {
-          positive: model.type === "positive" ? model.confidence || 0.85 : 1 - (model.confidence || 0.85),
-          negative: model.type === "negative" ? model.confidence || 0.85 : 1 - (model.confidence || 0.85),
+          positive: positiveProb,
+          negative: negativeProb,
         },
       }
-      setPredictionResult(result)
+
+      setPredictionResult(mapped)
+    } catch (err) {
+      console.error('Inference request failed:', err)
+      setPredictionResult(null)
+    } finally {
       setIsProcessing(false)
-    }, 3000)
+    }
   }
 
   return (
@@ -96,8 +169,8 @@ export default function STLClassificationDemo() {
       <div className="mx-auto max-w-[1600px] space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold text-white">STL Classification Demo</h1>
-          <p className="text-slate-400">Graph Neural Network for 3D Model Classification</p>
+          <h1 className="text-4xl font-bold text-white">MEDUSA</h1>
+          <p className="text-slate-400">Machine-learning Engine for Detecting Unlawful Shapes Automatically</p>
         </div>
 
         {/* Model Selection Panels */}
