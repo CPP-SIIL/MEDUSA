@@ -23,7 +23,7 @@ type Edge = {
 
 export function NeuralNetworkGraph({ isProcessing }: NeuralNetworkGraphProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const animationRef = useRef<number>(null)
+  const animationRef = useRef<number | null>(null)
   const nodesRef = useRef<Node[]>([])
   const edgesRef = useRef<Edge[]>([])
   const timeRef = useRef(0)
@@ -151,13 +151,14 @@ export function NeuralNetworkGraph({ isProcessing }: NeuralNetworkGraphProps) {
         ctx.stroke()
       })
 
-      animationRef.current = requestAnimationFrame(animate)
+  // store the animation id (or null)
+  animationRef.current = requestAnimationFrame(animate)
     }
 
     animate()
 
     return () => {
-      if (animationRef.current) {
+      if (animationRef.current !== null) {
         cancelAnimationFrame(animationRef.current)
       }
       window.removeEventListener("resize", updateSize)

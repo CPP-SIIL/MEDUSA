@@ -19,7 +19,7 @@ import time
 # Add parent directory to path to import modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from gnn_model import STLClassifier, SimpleSTLClassifier, create_model
+from gnn_model import STLClassifier
 from stl_processor import STLToGraphConverter
 
 app = Flask(__name__)
@@ -28,7 +28,7 @@ CORS(app)  # Enable CORS for all routes
 class STLInferenceServer:
     """Main server class for handling STL model inference and management."""
     
-    def __init__(self, model_folder: str = None, examples_dir: str = "demo/examples"):
+    def __init__(self, model_folder: str = None, examples_dir: str = r"C:\Users\awebb\Documents\Programming\Work\SIIL\Cyber Fair Fall 2025\demo\examples"):
         """
         Initialize the inference server.
         
@@ -70,8 +70,7 @@ class STLInferenceServer:
         model_config = checkpoint.get('model_config', {})
         
         # Create model
-        model = create_model(
-            model_type=model_config.get('model_type', 'full'),
+        model = STLClassifier(
             input_dim=model_config.get('input_dim', 9),
             hidden_dim=model_config.get('hidden_dim', 64)
         )

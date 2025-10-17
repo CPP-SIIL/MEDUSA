@@ -121,34 +121,71 @@ export default function STLClassificationDemo() {
 
       const serverResult = payload.result
 
-      // Map server probabilities into { positive, negative }
+      // Robust mapping of probabilities and class
+      const serverPrediction = serverResult.prediction || serverResult
+      const probs = serverPrediction.probabilities
+      const predClassRaw = serverPrediction.class
+
       let positiveProb = 0
       let negativeProb = 0
 
-      const probs = serverResult.probabilities
-      if (Array.isArray(probs)) {
-        // server might return [neg, pos]
-        negativeProb = Number(probs[0] ?? 0)
-        positiveProb = Number(probs[1] ?? 0)
-      } else if (probs && typeof probs === 'object') {
-        positiveProb = Number(probs.positive ?? probs[1] ?? 0)
-        negativeProb = Number(probs.negative ?? probs[0] ?? 0)
+      if (probs && typeof probs === 'object' && !Array.isArray(probs)) {
+        // Named probabilities: prefer explicit keys
+        positiveProb = Number(probs.positive ?? probs.pos ?? probs[1] ?? 0)
+        negativeProb = Number(probs.negative ?? probs.neg ?? probs[0] ?? 0)
+      } else if (Array.isArray(probs) && probs.length >= 2) {
+        // Array case: try to respect returned predicted class ordering when possible
+        const a = Number(probs[0] ?? 0)
+        const b = Number(probs[1] ?? 0)
+        if (predClassRaw === 1 || predClassRaw === 'positive') {
+          positiveProb = Math.max(a, b)
+          negativeProb = Math.min(a, b)
+        } else if (predClassRaw === 0 || predClassRaw === 'negative') {
+          negativeProb = Math.max(a, b)
+          positiveProb = Math.min(a, b)
+        } else {
+          // Default ordering used by server: [negative, positive]
+          negativeProb = a
+          positiveProb = b
+        }
       } else {
-        // fallback: use confidence and class
-        const conf = Number(serverResult.confidence ?? 0)
-        const cls = serverResult.class
-        if (cls === 'positive' || cls === 1) {
+        // Fallback: use confidence + class
+        const conf = Number(serverPrediction.confidence ?? serverResult.confidence ?? 0)
+        if (predClassRaw === 1 || predClassRaw === 'positive') {
           positiveProb = conf
           negativeProb = 1 - conf
-        } else {
+        } else if (predClassRaw === 0 || predClassRaw === 'negative') {
           negativeProb = conf
           positiveProb = 1 - conf
+        } else {
+          // Give a small positive probability if nothing else is available
+          positiveProb = model.type === 'positive' ? 0.5 : 0.5
+          negativeProb = 1 - positiveProb
         }
       }
 
+      // Normalize probabilities to sum to 1 (avoid server order issues)
+      const sum = positiveProb + negativeProb
+      if (sum > 0) {
+        positiveProb = Math.min(Math.max(positiveProb / sum, 0), 1)
+        negativeProb = Math.min(Math.max(negativeProb / sum, 0), 1)
+      } else {
+        positiveProb = 0
+        negativeProb = 1
+      }
+
+      const finalClass =
+        predClassRaw === 1 || predClassRaw === 'positive'
+          ? 'positive'
+          : predClassRaw === 0 || predClassRaw === 'negative'
+          ? 'negative'
+          : positiveProb >= negativeProb
+          ? 'positive'
+          : 'negative'
+
       const mapped: PredictionResult = {
-        class: serverResult.class === 'positive' || serverResult.class === 1 ? 'positive' : 'negative',
-        confidence: Number(serverResult.confidence ?? Math.max(positiveProb, negativeProb)),
+        class: finalClass,
+        confidence: Number(serverPrediction.confidence ?? serverResult.confidence ?? Math.max(positiveProb, negativeProb)),
         probabilities: {
           positive: positiveProb,
           negative: negativeProb,

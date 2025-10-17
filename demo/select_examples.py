@@ -42,7 +42,7 @@ from tqdm import tqdm
 # Add parent directory to path to import modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from gnn_model import STLClassifier, SimpleSTLClassifier, create_model
+from gnn_model import STLClassifier
 from data_loader import STLDataset, collate_fn
 from stl_processor import STLToGraphConverter
 
@@ -125,8 +125,7 @@ class ExampleSelector:
         model_config = checkpoint.get('model_config', {})
         
         # Create model instance
-        model = create_model(
-            model_type=model_config.get('model_type', 'full'),
+        model = STLClassifier(
             input_dim=model_config.get('input_dim', 9),
             hidden_dim=model_config.get('hidden_dim', 64)
         )

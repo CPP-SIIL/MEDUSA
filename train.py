@@ -18,7 +18,7 @@ import json
 from datetime import datetime
 import time
 
-from gnn_model import STLClassifier, SimpleSTLClassifier, create_model
+from gnn_model import STLClassifier
 from data_loader import create_data_loaders, analyze_dataset
 
 
@@ -487,21 +487,6 @@ class Trainer:
 
 
 def main():
-    # """Main training function."""
-    # parser = argparse.ArgumentParser(description='Train STL Classification Model')
-    # parser.add_argument('--data_dir', type=str, default='dataset', help='Dataset directory')
-    # parser.add_argument('--model_type', type=str, default='simple', choices=['simple', 'full'], help='Model type')
-    # parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
-    # parser.add_argument('--epochs', type=int, default=50, help='Number of epochs')
-    # parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
-    # parser.add_argument('--hidden_dim', type=int, default=32, help='Hidden dimension')
-    # parser.add_argument('--max_vertices', type=int, default=500, help='Max vertices per graph')
-    # parser.add_argument('--max_edges', type=int, default=2000, help='Max edges per graph')
-    # parser.add_argument('--patience', type=int, default=15, help='Early stopping patience')
-    # parser.add_argument('--output_dir', type=str, default='outputs', help='Output directory')
-    
-    # args = parser.parse_args()
-
     data_dir = "dataset"
     output_dir = "outputs"
     batch_size = 12  # Reduced batch size for better gradient updates
@@ -574,8 +559,7 @@ def main():
     
     # Create model
     print("Creating model...")
-    model = create_model(
-        model_type=model_type,
+    model = STLClassifier(
         input_dim=9,  # Node feature dimension from STL processor
         hidden_dim=hidden_dim
     )
@@ -633,7 +617,7 @@ def main():
             'hidden_dim': hidden_dim
         },
         'results': results
-    }, os.path.join(full_output_path, 'model.pth'))
+    }, os.path.join(full_output_path, 'model.pt'))
     
     print(f"Training completed! Results saved to {full_output_path}")
 
