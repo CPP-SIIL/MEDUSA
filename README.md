@@ -129,8 +129,8 @@ The training process generates:
 **F1**: 75.79%
 
 <img src="img/MEDUSA_training_graph.png" alt="MEDUSA Training Graphs">
-<img src="img/MEDUSA_Training_Accuracy.png" alt="MEDUSA Validation Accuracy Graph" width="49%">
-<img src="img/MEDUSA_validation_conf_matrix.png" alt="MEDUSA Validation Confusion Matrix" width="49%">
+<img src="img/MEDUSA_Training_Accuracy.png" alt="MEDUSA Validation Accuracy Graph" width="47%">
+<img src="img/MEDUSA_validation_conf_matrix.png" alt="MEDUSA Validation Confusion Matrix" width="50%">
 
 ## Future Improvements
 
